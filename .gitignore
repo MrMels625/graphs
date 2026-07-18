@@ -1,0 +1,15 @@
+graphs
+test_runner
+
+.build/
+
+*.o
+*.d
+
+*.swp
+*.swo
+*~
+
+\#*\#
+.\#*
+
