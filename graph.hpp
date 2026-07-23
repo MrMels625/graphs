@@ -2,19 +2,25 @@
 #define GRAPH_HPP
 
 #include <unordered_map>
+#include <unordered_set>
 #include <list>
+#include <stack>
+#include <queue>
+#include "vertex.hpp"
 
-template< class T >
+template< class T, class ID = size_t >
 class Graph
 {
 public:
-  void add_edge(const T&, const T&);
-  void add_vertex(const T&);
+  using V = Vertex< T, ID >;
 
-  void remove_edge(const T&, const T&);
-  void remove_vertex(const T&);
+  void add_edge(const V&, const V&);
+  void add_vertex(const V&);
 
-  size_t degree(const T&) noexcept;
+  void remove_edge(const V&, const V&);
+  void remove_vertex(const V&);
+
+  size_t degree(const V&) noexcept;
 
   void clear() noexcept;
 
@@ -22,14 +28,22 @@ public:
   size_t edges() const noexcept;
   bool empty() const noexcept;
 
+  template< class F >
+  void dfs(const V&, F);
+  template< class F >
+  void bfs(const V&, F);
+
+  bool operator==(const Graph& other) const;
+  bool operator!=(const Graph& other) const;
+
 private:
-  std::unordered_map< T, std::list< T > > adjacent_list;
+  std::unordered_map< ID, V > adjacent_list;
 };
 
 template< class T >
-void Graph< T >::add_edge(const T& first, const T& second)
+void Graph< T >::add_edge(const V& first, const V& second)
 {
-  adjacent_list[first].push_back(second);
+  adjacent_list[first.value].push_back(second);
   if (first != second)
   {
     adjacent_list[second].push_back(first);
@@ -37,13 +51,13 @@ void Graph< T >::add_edge(const T& first, const T& second)
 }
 
 template< class T >
-void Graph< T >::add_vertex(const T& vertex)
+void Graph< T >::add_vertex(const V& vertex)
 {
   adjacent_list[vertex];
 }
 
 template< class T >
-void Graph< T >::remove_edge(const T& first, const T& second)
+void Graph< T >::remove_edge(const V& first, const V& second)
 {
   if (adjacent_list.contains(first) && adjacent_list.contains(second))
   {
@@ -56,7 +70,7 @@ void Graph< T >::remove_edge(const T& first, const T& second)
 }
 
 template< class T >
-void Graph< T >::remove_vertex(const T& vertex)
+void Graph< T >::remove_vertex(const V& vertex)
 {
   if (adjacent_list.contains(vertex))
   {
@@ -65,7 +79,7 @@ void Graph< T >::remove_vertex(const T& vertex)
 }
 
 template< class T >
-size_t Graph< T >::degree(const T& vertex) noexcept
+size_t Graph< T >::degree(const V& vertex) noexcept
 {
   return adjacent_list.contains(vertex) ? adjacent_list[vertex].size() : 0ull;
 }
@@ -85,13 +99,75 @@ size_t Graph< T >::vertices() const noexcept
 template< class T >
 size_t Graph< T >::edges() const noexcept
 {
-  return 0ull;
+  size_t count = 0;
+  for (auto pair: adjacent_list)
+  {
+    count += pair.second.size();
+  }
+  return count / 2;
 }
 
 template< class T >
 bool Graph< T >::empty() const noexcept
 {
   return adjacent_list.empty();
+}
+
+template< class T >
+template< class F >
+void Graph< T >::dfs(const V& vertex, F f)
+{
+  auto it = adjacent_list.find(vertex);
+  if (!it)
+  {
+    return;
+  }
+
+  std::stack< ID > stack;
+  stack.push(it->first);
+  std::unordered_set< T > visited;
+
+  while (!stack.empty())
+  {
+    f(adjacent_list[stack.top()].second);
+    ID id = stack.top();
+    visited.insert(id);
+    stack.pop();
+    for (size_t i = adjacent_list[id].second.size() - 1; i >= 0; --i)
+    {
+      ID idd = adjacent_list[id].second.neighbors[i];
+      if (!visited.contains(idd))
+      {
+        stack.push(idd);
+      }
+    }
+  }
+}
+
+template< class T >
+template< class F >
+void Graph< T >::bfs(const V&, F f)
+{
+}
+
+template< class T >
+bool Graph< T >::operator==(const Graph& other) const
+{
+  if (vertices() != other.vertices())
+  {
+    return false;
+  }
+  if (edges() != other.edges())
+  {
+    return false;
+  }
+  return true;
+}
+
+template< class T >
+bool Graph< T >::operator!=(const Graph& other) const
+{
+  return !operator==(other);
 }
 
 #endif
